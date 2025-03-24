@@ -1,0 +1,55 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "provider": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                },
+                "email": {
+                    "type": "string",
+                    "format": "email"
+                },
+                "provider_type": {
+                    "type": "string",
+                    "enum": [
+                        "Individual Provider",
+                        "Healthcare System/Org",
+                        "Holistic Provider/Org"
+                    ]
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "contact_information": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "address": {
+                    "$ref": "./address.json"
+                },
+                "phone": {
+                    "$ref": "./phone.json"
+                },
+                "supported_health_issues": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": [
+                "name",
+                "email",
+                "provider_type"
+            ]
+        }
+    },
+    "required": [
+        "provider"
+    ]
+}

@@ -1,0 +1,87 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ProviderProfileUpdate",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 100
+        },
+        "provider_type": {
+            "type": "string",
+            "enum": [
+                "Individual Provider",
+                "Healthcare System/Org",
+                "Holistic Provider/Org"
+            ]
+        },
+        "bio": {
+            "type": "string"
+        },
+        "contact_information": {
+            "type": "string",
+            "maxLength": 255
+        },
+        "address": {
+            "type": "object",
+            "properties": {
+                "street_address": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "apartment_number": {
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "city": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "state": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "postal_code": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            },
+            "required": ["street_address", "city", "state", "postal_code"]
+        },
+        "phone": {
+            "type": "object",
+            "properties": {
+                "country_code": {
+                    "type": "string",
+                    "maxLength": 5
+                },
+                "area_code": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "phone_type": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            },
+            "required": ["country_code", "phone_number", "phone_type"]
+        },
+        "supported_health_issues": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "additionalProperties": false
+}

@@ -1,0 +1,38 @@
+{
+    "$id": "address.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Address",
+    "type": "object",
+    "properties": {
+        "street_address": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "apartment_number": {
+            "type": "string",
+            "maxLength": 20
+        },
+        "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "state": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "postal_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+        }
+    },
+    "required": [
+        "street_address",
+        "city",
+        "state",
+        "postal_code"
+    ]
+}

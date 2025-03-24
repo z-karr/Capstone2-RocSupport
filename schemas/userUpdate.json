@@ -1,0 +1,36 @@
+{
+    
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "CivilianProfileUpdate",
+    "type": "object",
+    "properties": {
+        "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 100
+        },
+        "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 100
+        },
+        "bio": {
+            "type": "string"
+        },
+        "address": {
+            "$ref": "./address.json"
+        },
+        "phone": {
+            "$ref": "./phone.json"
+        }
+    },
+    "required": [
+        "username",
+        "email"
+    ]
+}
