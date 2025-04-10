@@ -1,8 +1,4 @@
-BEGIN;
-
--- Keep these existing tables unchanged
--- PhoneNumbers and Addresses tables remain as they are
--- MedicalIssues table remains as it is
+start TRANSACTION;
 
 -- Step 1: Create the master Users table
 CREATE TABLE MasterUsers (
@@ -10,7 +6,6 @@ CREATE TABLE MasterUsers (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('patient', 'provider')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -20,7 +15,6 @@ CREATE TABLE MasterUsers (
 CREATE TABLE Patients (
     patient_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
-    username VARCHAR(50) NOT NULL,
     bio TEXT,
     addressID INT,
     phoneID INT,
@@ -62,63 +56,6 @@ CREATE TABLE FavoritesContactsNew (
     provider_id INT NOT NULL REFERENCES HealthcareProvidersNew(provider_id) ON DELETE CASCADE
 );
 
--- Populate MasterUsers from existing Users and HealthcareProviders
-INSERT INTO MasterUsers (email, password, name, type)
-SELECT email, password, username, 'patient' FROM Users;
-
-INSERT INTO MasterUsers (email, password, name, type)
-SELECT email, password, name, 'provider' FROM HealthcareProviders;
-
--- Populate Patients table
-INSERT INTO Patients (user_id, username, bio, addressID, phoneID, created_at, updated_at)
-SELECT 
-    m.user_id, 
-    u.username, 
-    u.bio, 
-    u.addressID, 
-    u.phoneID,
-    u.created_at,
-    u.updated_at
-FROM Users u
-JOIN MasterUsers m ON u.email = m.email;
-
--- Populate HealthcareProvidersNew table
-INSERT INTO HealthcareProvidersNew (user_id, provider_type, bio, contact_information, addressID, phoneID, created_at, updated_at)
-SELECT 
-    m.user_id, 
-    h.provider_type, 
-    h.bio, 
-    h.contact_information, 
-    h.addressID, 
-    h.phoneID,
-    h.created_at,
-    h.updated_at
-FROM HealthcareProviders h
-JOIN MasterUsers m ON h.email = m.email;
-
--- Update ProviderSupportedIssues
-INSERT INTO ProviderSupportedIssuesNew (provider_id, issue_id)
-SELECT 
-    hn.provider_id, 
-    p.issue_id
-FROM ProviderSupportedIssues p
-JOIN HealthcareProviders h ON p.provider_id = h.HealthcareProvider_id
-JOIN MasterUsers m ON h.email = m.email
-JOIN HealthcareProvidersNew hn ON hn.user_id = m.user_id;
-
--- Update FavoritesContacts
-INSERT INTO FavoritesContactsNew (patient_id, provider_id)
-SELECT 
-    p.patient_id, 
-    hp.provider_id
-FROM FavoritesContacts f
-JOIN Users u ON f.civilian_user_id = u.user_id
-JOIN MasterUsers mu ON u.email = mu.email
-JOIN Patients p ON p.user_id = mu.user_id
-JOIN HealthcareProviders h ON f.provider_id = h.HealthcareProvider_id
-JOIN MasterUsers mp ON h.email = mp.email
-JOIN HealthcareProvidersNew hp ON hp.user_id = mp.user_id;
-
 -- Drop old tables and constraints
 DROP TABLE FavoritesContacts;
 DROP TABLE ProviderSupportedIssues;
@@ -130,10 +67,4 @@ ALTER TABLE FavoritesContactsNew RENAME TO FavoritesContacts;
 ALTER TABLE ProviderSupportedIssuesNew RENAME TO ProviderSupportedIssues;
 ALTER TABLE HealthcareProvidersNew RENAME TO HealthcareProviders;
 
--- Verify the migration was successful
-SELECT COUNT(*) AS master_users_count FROM MasterUsers;
-SELECT COUNT(*) AS patients_count FROM Patients;
-SELECT COUNT(*) AS providers_count FROM HealthcareProviders;
-
 COMMIT;
-
