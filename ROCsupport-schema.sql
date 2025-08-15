@@ -62,6 +62,13 @@ CREATE TABLE FavoritesContactsNew (
     provider_id INT NOT NULL REFERENCES HealthcareProvidersNew(provider_id) ON DELETE CASCADE
 );
 
+CREATE TABLE medicalissuesNew (
+	issue_id serial4 NOT NULL,
+	issue_name varchar(100) NOT NULL,
+	description text NULL,
+	CONSTRAINT medicalissues_pkey PRIMARY KEY (issue_id)
+);
+
 -- Populate MasterUsers from existing Users and HealthcareProviders
 INSERT INTO MasterUsers (email, password, name, type)
 SELECT email, password, username, 'patient' FROM Users;
@@ -119,15 +126,41 @@ JOIN HealthcareProviders h ON f.provider_id = h.HealthcareProvider_id
 JOIN MasterUsers mp ON h.email = mp.email
 JOIN HealthcareProvidersNew hp ON hp.user_id = mp.user_id;
 
+INSERT INTO medicalissuesNew (issue_name,description) VALUES
+	 ('Addiction','General addiction issues'),
+	 ('Alcoholism','Alcohol-specific addiction'),
+	 ('Alcohol Dependency','Dependency on alcohol'),
+	 ('Anger Management','Techniques to control and manage anger'),
+	 ('Anxiety','Various anxiety disorders'),
+	 ('Chemical Dependency','Dependency on chemical substances'),
+	 ('Depression','Various depressive disorders'),
+	 ('Drug Dependency','Dependency on drugs'),
+	 ('Family Medicine','General family medical issues'),
+	 ('Mental Health','Various mental health concerns'),
+     ('Opiate Addiction','Addiction specific to opiates'),
+	 ('Pain Management','Chronic and acute pain management'),
+	 ('Physical Therapy','Physical rehabilitation and therapy'),
+	 ('Post-Traumatic Stress Disorder (PTSD)','Treatment for trauma-related stress disorders'),
+	 ('Psychiatry','Medical specialty dealing with mental health disorders'),
+	 ('Sexual Assault Recovery','Specialized support for sexual assault survivors'),
+	 ('Substance Abuse','Abuse of various substances'),
+	 ('Therapy','Various forms of psychological treatment'),
+	 ('Trauma-Informed Care','Approach recognizing the impact of trauma'),
+	 ('Women''s Health','Comprehensive health services for women');
+
+
 -- Drop old tables and constraints
 DROP TABLE FavoritesContacts;
 DROP TABLE ProviderSupportedIssues;
+DROP TABLE medicalissues;
 DROP TABLE HealthcareProviders;
 DROP TABLE Users;
+
 
 -- Rename new tables
 ALTER TABLE FavoritesContactsNew RENAME TO FavoritesContacts;
 ALTER TABLE ProviderSupportedIssuesNew RENAME TO ProviderSupportedIssues;
+ALTER TABLE medicalissuesNew RENAME TO medicalissues;
 ALTER TABLE HealthcareProvidersNew RENAME TO HealthcareProviders;
 
 -- Verify the migration was successful

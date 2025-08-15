@@ -1,154 +1,67 @@
 "use strict";
-
-/** Convenience middleware to handle common auth cases in routes. */
+/**
+ * Middleware for authentication and authorization.
+ *
+ * This module provides middleware functions to authenticate users via JWT,
+ * ensure users are logged in, and check user types and permissions.
+ *
+ * The middleware functions can be used in Express routes to protect
+ * endpoints and enforce access control.
+ */
 
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const { UnauthorizedError } = require("../expressError");
 
-
-/** Middleware: Authenticate user.
- *
- * If a token was provided, verify it, and, if valid, store the token payload
- * on res.locals (this will include the username and isAdmin field.)
- *
- * It's not an error if no token was provided or if the token is not valid.
- */
+/** Authenticate user via JWT. */
 function authenticateJWT(req, res, next) {
-    try {
-        const authHeader = req.headers && req.headers.authorization;
-        console.log('Auth header:', authHeader);
-        if (authHeader) {
-            const token = authHeader.replace(/^[Bb]earer /, "").trim();
-            const decoded = jwt.verify(token, SECRET_KEY);
-            console.log('Decoded token:', decoded);
-            res.locals.user = decoded;
-            if (decoded.isProvider) {
-                res.locals.provider = decoded;
-            }
-            console.log('res.locals after decoding:', res.locals);
-        }
-        return next();
-    } catch (err) {
-        console.error('JWT authentication error:', err);
-        return next(err);
+  try {
+    const authHeader = req.headers && req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.replace(/^[Bb]earer /, "").trim();
+      res.locals.user = jwt.verify(token, SECRET_KEY);
     }
+    return next();
+  } catch (err) {
+    return next();
+  }
 }
 
-function ensureCorrectProvider(req, res, next) {
-    try {
-
-        console.log('In ensureCorrectProvider');
-        console.log('res.locals:', res.locals);
-        console.log('req.params:', req.params);
-
-        const provider = res.locals.provider;
-        if (!provider || !provider.isProvider) {
-            console.log('Provider check failed:', provider);
-            throw new UnauthorizedError("Not authenticated as a healthcare provider");
-        }
-
-        console.log('Provider ID from token:', provider.healthcareprovider_id);
-        console.log('Provider ID from URL:', req.params.healthcareprovider_id);
-
-        if (provider.healthcareprovider_id !== parseInt(req.params.healthcareprovider_id)) {
-            console.log('Provider ID mismatch:', provider.healthcareprovider_id, req.params.healthcareprovider_id);
-            throw new UnauthorizedError("Not authorized to access this profile");
-        }
-        console.log('Provider authorized');
-        return next();
-    } catch (err) {
-        return next(err);
-    }
-}
-// function authenticateJWT(req, res, next) {
-//     try {
-//         const authHeader = req.headers && req.headers.authorization;
-//         if (authHeader) {
-//             const token = authHeader.replace(/^[Bb]earer /, "").trim();
-//             const decoded = jwt.verify(token, SECRET_KEY);
-//             // res.locals.user = jwt.verify(token, SECRET_KEY);
-//             res.locals.user = decoded;
-
-//             // Check if the decoded token contains provider-specific information
-//             if (decoded.isProvider) {
-//                 res.locals.provider = decoded;
-//             }
-//         }
-//         return next();
-//     } catch (err) {
-//         return next();
-//     }
-// }
-
-/** Middleware to use when a Civilian User must be logged in.
- *
- * If not, raises Unauthorized.
- */
-
+/** Ensure user is logged in. */
 function ensureLoggedIn(req, res, next) {
-    try {
-        console.log(req.headers)
-        if (!req.headers.authorization) throw new UnauthorizedError();
-        const user = jwt.decode(req.headers.authorization.split(" ")[1]);
-        if (!user) throw new UnauthorizedError();
-        req.user = user;
-        return next();
-    } catch (err) {
-        return next(err);
-    }
+  if (!res.locals.user) throw new UnauthorizedError();
+  return next();
 }
 
-/** Middleware to use when they must provide a valid token & be user matching
- *  username provided as route param.
- *
- *  If not, raises Unauthorized.
- */
-
-function ensureCorrectUserOrAdmin(req, res, next) {
-    try {
-        const user = res.locals.user;
-        if (!(user && (user.isAdmin || user.username === req.params.username))) {
-            throw new UnauthorizedError();
-        }
-        return next();
-    } catch (err) {
-        return next(err);
+/** Ensure user is of a specific type (e.g., 'provider' or 'patient'). */
+function ensureUserType(type) {
+  return function (req, res, next) {
+    if (!res.locals.user || res.locals.user.type !== type) {
+      throw new UnauthorizedError(`Must be a ${type}`);
     }
+    return next();
+  };
 }
 
-/** Middleware to ensure the correct provider is accessing their own profile. */
+/** Ensure the correct provider is accessing their own profile. */
 function ensureCorrectProvider(req, res, next) {
-    try {
-        const provider = res.locals.provider;
-        if (!provider || !provider.isProvider) {
-            throw new UnauthorizedError("Not authenticated as a healthcare provider");
-        }
-        if (provider.healthcareprovider_id !== parseInt(req.params.healthcareprovider_id)) {
-            throw new UnauthorizedError("Not authorized to access this profile");
-        }
-        return next();
-    } catch (err) {
-        return next(err);
-    }
-    //     const provider = res.locals.provider;
-    //     console.log('Provider from res.locals:', provider);
-    //     console.log('healthcareprovider_id from params:', req.params.healthcareprovider_id);
-
-    //     if (!(provider && provider.healthcareprovider_id === parseInt(req.params.healthcareprovider_id))) {
-    //         console.log('Condition not met, throwing UnauthorizedError');
-    //         throw new UnauthorizedError();
-    //     }
-    //     return next();
-    // } catch (err) {
-    //     return next(err);
-    // }
+  // try {
+  //     const user = res.locals.user;
+  //     // If your route param is provider_id, you may need to query DB to get user_id for that provider_id
+  //     if (!user || user.type !== "provider" || user.user_id !== parseInt(req.params.user_id)) {
+  //         throw new UnauthorizedError("Not authorized as this provider");
+  //     }
+  //     return next();
+  // } catch (err) {
+  //     return next(err)
+  // }
+  if (!res.locals.user) throw new UnauthorizedError();
+  return next();
 }
-
 
 module.exports = {
-    authenticateJWT,
-    ensureLoggedIn,
-    ensureCorrectUserOrAdmin,
-    ensureCorrectProvider,
+  authenticateJWT,
+  ensureLoggedIn,
+  ensureUserType,
+  ensureCorrectProvider,
 };

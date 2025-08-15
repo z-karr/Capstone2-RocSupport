@@ -15,16 +15,21 @@ class Addresses {
      * Returns the newly inserted address object.
      */
     static async create({ street_address, apartment_number, city, state, postal_code }) {
+        // Validate required fields
+        if (!street_address || !postal_code) {
+            throw new BadRequestError("Street address and postal code are required.");
+        }
+
         // Check if the address already exists
         const duplicateCheck = await db.query(
             `SELECT *
-            FROM addresses
-            WHERE street_address = $1
-                AND apartment_number = $2
-                AND city = $3
-                AND state = $4
-                AND postal_code = $5`,
-            [street_address, apartment_number, city, state, postal_code],
+             FROM addresses
+             WHERE street_address = $1
+               AND apartment_number = $2
+               AND city = $3
+               AND state = $4
+               AND postal_code = $5`,
+            [street_address, apartment_number, city, state, postal_code]
         );
 
         // If address already exists, throw a BadRequestError
@@ -43,7 +48,7 @@ class Addresses {
                 postal_code
             ) VALUES ($1, $2, $3, $4, $5)
             RETURNING *`,
-            [street_address, apartment_number, city, state, postal_code],
+            [street_address, apartment_number, city, state, postal_code]
         );
 
         const address = result.rows[0];
@@ -54,20 +59,20 @@ class Addresses {
     /** Get an address by its ID.
      * 
      * Returns the address data from the addresses table, by its ID.
-     * If the address does not exist in the database, it throws a BadRequestError.
+     * If the address does not exist in the database, it throws a NotFoundError.
      * 
      * Returns the address object.
      */
     static async getAddressById(address_id) {
         const result = await db.query(
             `SELECT address_id,
-            street_address,
-            apartment_number,
-            city,
-            state,
-            postal_code
-        FROM addresses
-        WHERE address_id = $1`,
+                    street_address,
+                    apartment_number,
+                    city,
+                    state,
+                    postal_code
+             FROM addresses
+             WHERE address_id = $1`,
             [address_id]
         );
 
@@ -94,21 +99,28 @@ class Addresses {
         const { street_address, apartment_number, city, state, postal_code } = newData;
         const result = await db.query(
             `UPDATE addresses
-        SET street address = $1,
-            apartment_number = $2,
-            city = $3,
-            state = $4,
-            postal_code = $5
-        WHERE address_id = $6
-        RETURNING address_id`,
-            [street_address, apartment_number, city, state, postal_code, address_id],
+             SET street_address = $1,
+                 apartment_number = $2,
+                 city = $3,
+                 state = $4,
+                 postal_code = $5
+             WHERE address_id = $6
+             RETURNING *`,
+            [street_address, apartment_number, city, state, postal_code, address_id]
         );
-        return result.rows[0]
+
+        const updatedAddress = result.rows[0];
+
+        if (!updatedAddress) {
+            throw new NotFoundError(`Address not found with ID: ${address_id}`);
+        }
+
+        return updatedAddress;
     }
 
     /** Delete an address by its ID
      * 
-     * Returns true if the address was successfully deleted.
+     * Returns the ID of the deleted address.
      * 
      * Throws NotFoundError if the address with the given ID is not found
      */
@@ -119,14 +131,19 @@ class Addresses {
         // Delete the address
         const result = await db.query(
             `DELETE FROM addresses
-        WHERE address_id = $1`,
-            [address_id],
+             WHERE address_id = $1
+             RETURNING address_id`,
+            [address_id]
         );
 
-        return result.rowCount > 0; // Returns Boolean val True or False whether or not address was deleted (True)
+        const deletedAddressId = result.rows[0]?.address_id;
+
+        if (!deletedAddressId) {
+            throw new NotFoundError(`Address not found with ID: ${address_id}`);
+        }
+
+        return deletedAddressId;
     }
-
-
 }
 
 module.exports = Addresses;

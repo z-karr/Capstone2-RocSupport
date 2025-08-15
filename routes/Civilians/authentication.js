@@ -1,64 +1,68 @@
-/** Routes for civilian authentication */
-
 "use strict";
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { validate } = require('jsonschema');
-const userSignupSchema = require('../../schemas/userSignup.json');
-const userLoginSchema = require('../../schemas/userLogin.json');
-const { BadRequestError } = require('../../expressError');
-const User = require('../../models/Users');
-const { createToken } = require('../../helpers/tokens');
-const validatorSchema = require('../../middleware/validator');
-const { request } = require('../../app');
+const userSignupSchema = require("../../schemas/userSignup.json");
+const userLoginSchema = require("../../schemas/userLogin.json");
+const User = require("../../models/Users");
+const { createToken } = require("../../helpers/tokens");
+const validatorSchema = require("../../middleware/validator");
 
-/** POST /signup: { user } => { token }
- *
- * user must include { username, email, password, type, bio, address, phone }
- *
- * Returns JWT token which can be used to authenticate further requests.
- *
- * Authorization required: none
+/** POST /signup: { user } => { token, user }
+ * user must include { username, email, password, bio, address, phone }
+ * Returns JWT token and user info.
  */
-router.post('/signup', validatorSchema(userSignupSchema), async function (req, res, next) {
+router.post(
+  "/signup",
+  validatorSchema(userSignupSchema),
+  async function (req, res, next) {
     try {
-        console.log(req.body)
-        const newUser = await User.register(req.body);
-        const token = createToken(newUser);
-        return res.status(201).json({ token, user: newUser });
+      const newUser = await User.register(req.body);
+      const token = createToken({
+        user_id: newUser.user_id,
+        type: "patient",
+        patient_id: newUser.patient_id,
+        email: newUser.email,
+      });
+      return res.status(201).json({ token, user: newUser });
     } catch (err) {
-        return next(err);
+      return next(err);
     }
+  }
+);
 
-});
-
-/** POST /login: { email, password } => { token }
- *
- * Returns JWT token which can be used to authenticate further requests.
- *
- * Authorization required: none
+/** POST /login: { email, password } => { token, user }
+ * Returns JWT token and user info.
  */
-router.post('/login', validatorSchema(userLoginSchema), async function (req, res, next) {
+router.post(
+  "/login",
+  validatorSchema(userLoginSchema),
+  async function (req, res, next) {
     try {
-        const { email, password } = req.body;
-        const user = await User.authenticate(email, password);
-        const token = createToken(user);
-        console.log(token)
-        return res.json({
-            token,
-            user: {
-                user_id: user.user_id,
-                username: user.username,
-                email: user.email,
-                bio: user.bio
-            }
-        });
-        // return res.json({ token, id: user.user_id });
+      const { email, password } = req.body;
+      const user = await User.authenticate(email, password);
+      const token = createToken({
+        user_id: user.user_id,
+        type: "patient",
+        patient_id: user.patient_id,
+        email: user.email,
+      });
+      return res.json({
+        token,
+        user: {
+          user_id: user.user_id,
+          patient_id: user.patient_id,
+          username: user.username,
+          email: user.email,
+          bio: user.bio,
+          addressID: user.addressID,
+          phoneID: user.phoneID,
+        },
+      });
     } catch (err) {
-        // This will catch the "Invalid username/password" error and any other errors
-        return next(err);
+      return next(err);
     }
-});
+  }
+);
 
 module.exports = router;
