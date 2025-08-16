@@ -1,13 +1,13 @@
 {
     "$id": "userSignup.json",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "User",
+    "title": "Patient Signup",
     "type": "object",
     "properties": {
-        "username": {
+        "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 50
+            "maxLength": 100
         },
         "email": {
             "type": "string",
@@ -27,8 +27,10 @@
         }
     },
     "required": [
-        "username",
+        "name",
         "email",
-        "password"
+        "password",
+        "address",
+        "phone"
     ]
 }

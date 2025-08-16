@@ -12,17 +12,14 @@ const {
 const providerProfileUpdateSchema = require("../../schemas/providerUpdate.json");
 
 /**
- * GET /profile/:provider_id - Get provider profile
+ * GET /profile/:providerId - Get provider profile (public access)
  */
 router.get(
-  "/profile/:provider_id",
-  authenticateJWT,
-  ensureLoggedIn,
-  ensureCorrectProvider,
+  "/profile/:providerId",
   async function (req, res, next) {
     try {
       const provider = await HealthcareProviders.getProviderById(
-        req.params.provider_id
+        req.params.providerId
       );
       return res.json({ provider });
     } catch (err) {
@@ -58,17 +55,17 @@ router.patch(
 );
 
 /**
- * DELETE /profile/:provider_id - Delete provider profile
+ * DELETE /profile/:providerId - Delete provider profile
  */
 router.delete(
-  "/profile/:provider_id",
+  "/profile/:providerId",
   authenticateJWT,
   ensureLoggedIn,
   ensureCorrectProvider,
   async function (req, res, next) {
     try {
       await HealthcareProviders.deleteHealthcareProviderById(
-        req.params.provider_id
+        req.params.providerId
       );
       return res.json({ message: "Provider deleted" });
     } catch (err) {

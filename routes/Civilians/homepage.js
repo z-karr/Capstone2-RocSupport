@@ -24,6 +24,7 @@ router.post(
   validatorSchema(medicalIssuesSchema),
   async function (req, res, next) {
     try {
+      console.log("Search request received:", req.body);
       const { issue_name } = req.body;
       const providers = await HealthcareProviders.findByMedicalIssue(
         issue_name

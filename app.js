@@ -21,6 +21,10 @@ app.use(cors());
 
 
 
+// Mount unified authentication route
+const authRoutes = require("./routes/auth");
+app.use("/", authRoutes);
+
 // Mount routes for civilians
 const homepageRoutes = require("./routes/Civilians/homepage");
 const civilianAuthenticationRoutes = require("./routes/Civilians/authentication");

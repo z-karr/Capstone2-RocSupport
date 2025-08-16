@@ -103,9 +103,7 @@ class EmergencyResources {
         );
 
         const resources = result.rows;
-        if (resources.length === 0) throw new NotFoundError(`No emergency resources found for medical issue ID: ${issue_id}`);
-
-        return resources;
+        return resources; // Return empty array if no resources found
     }
 
     /**Retrieve all emergency resources by a specific supported medical issue name.
@@ -121,7 +119,7 @@ class EmergencyResources {
         );
 
         const issueRow = issueRes.rows[0];
-        if (!issueRow) throw new NotFoundError(`No medical issue found with name: ${issue}`);
+        if (!issueRow) return []; // Return empty array if medical issue not found
 
         const issue_id = issueRow.issue_id;
 

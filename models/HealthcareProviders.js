@@ -4,7 +4,7 @@ const db = require("../db");
 const { BCRYPT_WORK_FACTOR } = require("../config");
 const bcrypt = require("bcrypt");
 const { sqlForPartialUpdate } = require("../helpers/sql");
-const { BadRequestError, NotFoundError } = require("../expressError");
+const { BadRequestError, NotFoundError, UnauthorizedError } = require("../expressError");
 
 class HealthcareProviders {
   /** Create new healthcare provider
@@ -154,7 +154,7 @@ class HealthcareProviders {
   static async authenticate(email, password) {
     // Try to find the user first
     const result = await db.query(
-      `SELECT MU.user_id, MU.password, MU.email, HP.provider_id
+      `SELECT MU.user_id, MU.password, MU.email, MU.name, HP.provider_id, HP.provider_type, HP.bio, HP.contact_information
              FROM masterusers MU
              INNER JOIN healthcareproviders HP ON MU.user_id = HP.user_id
              WHERE MU.email = $1 AND MU.type = 'provider'`,
@@ -346,7 +346,75 @@ class HealthcareProviders {
         );
       }
 
-      // 5. Update supported health issues if provided
+      // 5. Update address if provided
+      if (data.address && Object.keys(data.address).length > 0) {
+        // Get the current address ID for this provider
+        const currentProviderResult = await db.query(
+          `SELECT addressID FROM HealthcareProviders WHERE provider_id = $1`,
+          [provider_id]
+        );
+        const addressId = currentProviderResult.rows[0]?.addressid;
+        
+        if (addressId) {
+          // Filter out address_id from the update data
+          const addressData = { ...data.address };
+          delete addressData.address_id;
+          
+          const addressFields = Object.keys(addressData).filter(key => 
+            ['street_address', 'apartment_number', 'city', 'state', 'postal_code'].includes(key)
+          );
+          
+          if (addressFields.length > 0) {
+            const addressUpdateData = {};
+            addressFields.forEach(field => {
+              addressUpdateData[field] = addressData[field];
+            });
+            
+            const { setCols, values } = sqlForPartialUpdate(addressUpdateData, {});
+            const addressIdVarIdx = "$" + (values.length + 1);
+            await db.query(
+              `UPDATE Addresses SET ${setCols} WHERE address_id = ${addressIdVarIdx}`,
+              [...values, addressId]
+            );
+          }
+        }
+      }
+
+      // 6. Update phone if provided
+      if (data.phone && Object.keys(data.phone).length > 0) {
+        // Get the current phone ID for this provider
+        const currentProviderResult = await db.query(
+          `SELECT phoneID FROM HealthcareProviders WHERE provider_id = $1`,
+          [provider_id]
+        );
+        const phoneId = currentProviderResult.rows[0]?.phoneid;
+        
+        if (phoneId) {
+          // Filter out phone_id from the update data
+          const phoneData = { ...data.phone };
+          delete phoneData.phone_id;
+          
+          const phoneFields = Object.keys(phoneData).filter(key => 
+            ['country_code', 'area_code', 'phone_number', 'phone_type'].includes(key)
+          );
+          
+          if (phoneFields.length > 0) {
+            const phoneUpdateData = {};
+            phoneFields.forEach(field => {
+              phoneUpdateData[field] = phoneData[field];
+            });
+            
+            const { setCols, values } = sqlForPartialUpdate(phoneUpdateData, {});
+            const phoneIdVarIdx = "$" + (values.length + 1);
+            await db.query(
+              `UPDATE PhoneNumbers SET ${setCols} WHERE phone_id = ${phoneIdVarIdx}`,
+              [...values, phoneId]
+            );
+          }
+        }
+      }
+
+      // 7. Update supported health issues if provided
       if (
         data.supported_health_issues &&
         data.supported_health_issues.length > 0

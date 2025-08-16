@@ -19,12 +19,20 @@ router.post(
     try {
       const newUser = await User.register(req.body);
       const token = createToken({
-        user_id: newUser.user_id,
+        user_id: newUser.userId,
         type: "patient",
-        patient_id: newUser.patient_id,
+        patient_id: newUser.patientId,
         email: newUser.email,
       });
-      return res.status(201).json({ token, user: newUser });
+      return res.status(201).json({ 
+        token, 
+        user: {
+          userId: newUser.userId,
+          patientId: newUser.patientId,
+          name: newUser.name,
+          email: newUser.email,
+        }
+      });
     } catch (err) {
       return next(err);
     }

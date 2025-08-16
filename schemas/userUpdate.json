@@ -1,13 +1,13 @@
 {
     
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "CivilianProfileUpdate",
+    "title": "PatientProfileUpdate",
     "type": "object",
     "properties": {
-        "username": {
+        "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 50
+            "maxLength": 100
         },
         "email": {
             "type": "string",
@@ -19,9 +19,6 @@
             "minLength": 6,
             "maxLength": 100
         },
-        "bio": {
-            "type": "string"
-        },
         "address": {
             "$ref": "./address.json"
         },
@@ -29,8 +26,5 @@
             "$ref": "./phone.json"
         }
     },
-    "required": [
-        "username",
-        "email"
-    ]
+    "required": []
 }
