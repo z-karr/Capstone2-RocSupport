@@ -30,18 +30,22 @@ const homepageRoutes = require("./routes/Civilians/homepage");
 const civilianAuthenticationRoutes = require("./routes/Civilians/authentication");
 const civilianProfileRoutes = require("./routes/Civilians/profile");
 const favoritesRoutes = require("./routes/Civilians/favorites");
+const civilianContactsRoutes = require("./routes/Civilians/contacts");
 
 app.use("/", homepageRoutes);
 app.use("/civilians", civilianAuthenticationRoutes);
 app.use("/civilians", civilianProfileRoutes);
 app.use("/civilians", favoritesRoutes);
+app.use("/civilians/contacts", civilianContactsRoutes);
 
 // Mount routes for providers
 const providerAuthenticationRoutes = require("./routes/Providers/authentication");
 const providerProfileRoutes = require("./routes/Providers/profile");
+const providerContactsRoutes = require("./routes/Providers/contacts");
 
 app.use("/provider", providerAuthenticationRoutes);
 app.use("/provider", providerProfileRoutes);
+app.use("/provider/contacts", providerContactsRoutes);
 
 // Mount routes for emergency resources
 const emergencyResourcesRoutes = require("./routes/EmergencyResources");
