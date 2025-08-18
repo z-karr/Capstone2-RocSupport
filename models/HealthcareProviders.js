@@ -251,11 +251,21 @@ class HealthcareProviders {
   /** Retrieve all healthcare providers by a specific supported medical issue ID */
   static async getHealthcareProviderByIssueID(issue_id) {
     const res = await db.query(
-      `SELECT HP.provider_id, MU.name, MU.email, HP.provider_type, HP.bio, HP.contact_information
+      `SELECT HP.provider_id, MU.name, MU.email, HP.provider_type, HP.bio, HP.contact_information,
+              A.street_address, A.apartment_number, A.city, A.state, A.postal_code,
+              P.country_code, P.area_code, P.phone_number, P.phone_type,
+              ARRAY_AGG(MI.issue_name) as supported_health_issues
          FROM ProviderSupportedIssues PSI
          INNER JOIN HealthcareProviders HP ON PSI.provider_id = HP.provider_id
          INNER JOIN MasterUsers MU ON HP.user_id = MU.user_id
-         WHERE PSI.issue_id = $1`,
+         LEFT JOIN Addresses A ON HP.addressID = A.address_id
+         LEFT JOIN PhoneNumbers P ON HP.phoneID = P.phone_id
+         LEFT JOIN ProviderSupportedIssues PSI2 ON HP.provider_id = PSI2.provider_id
+         LEFT JOIN MedicalIssues MI ON PSI2.issue_id = MI.issue_id
+         WHERE PSI.issue_id = $1
+         GROUP BY HP.provider_id, MU.name, MU.email, HP.provider_type, HP.bio, HP.contact_information,
+                  A.street_address, A.apartment_number, A.city, A.state, A.postal_code,
+                  P.country_code, P.area_code, P.phone_number, P.phone_type`,
       [issue_id]
     );
 
@@ -286,6 +296,88 @@ class HealthcareProviders {
     const issue_id = issueRow.issue_id;
 
     return this.getHealthcareProviderByIssueID(issue_id);
+  }
+
+  /** Enhanced search with filters for providers 
+   * @param {Object} filters - Search filters
+   * @param {string} filters.issue_name - Medical issue to search for
+   * @param {string} filters.city - City to filter by
+   * @param {string} filters.state - State to filter by (defaults to NY for Rochester area)
+   * @param {string} filters.provider_type - Type of provider to filter by
+   * @param {string} filters.postal_code - ZIP code to filter by
+   */
+  static async searchWithFilters(filters = {}) {
+    let whereConditions = [];
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Base query
+    let query = `
+      SELECT DISTINCT HP.provider_id, MU.name, MU.email, HP.provider_type, HP.bio, HP.contact_information,
+             A.street_address, A.apartment_number, A.city, A.state, A.postal_code,
+             P.country_code, P.area_code, P.phone_number, P.phone_type,
+             ARRAY_AGG(DISTINCT MI.issue_name) as supported_health_issues
+      FROM HealthcareProviders HP
+      INNER JOIN MasterUsers MU ON HP.user_id = MU.user_id
+      LEFT JOIN Addresses A ON HP.addressID = A.address_id
+      LEFT JOIN PhoneNumbers P ON HP.phoneID = P.phone_id
+      LEFT JOIN ProviderSupportedIssues PSI ON HP.provider_id = PSI.provider_id
+      LEFT JOIN MedicalIssues MI ON PSI.issue_id = MI.issue_id
+    `;
+
+    // Add medical issue filter
+    if (filters.issue_name) {
+      whereConditions.push(`MI.issue_name ILIKE $${paramIndex}`);
+      queryParams.push(`%${filters.issue_name}%`);
+      paramIndex++;
+    }
+
+    // Add location filters
+    if (filters.city) {
+      whereConditions.push(`A.city ILIKE $${paramIndex}`);
+      queryParams.push(`%${filters.city}%`);
+      paramIndex++;
+    }
+
+    if (filters.state) {
+      whereConditions.push(`A.state = $${paramIndex}`);
+      queryParams.push(filters.state);
+      paramIndex++;
+    } else {
+      // Default to NY for Rochester area focus
+      whereConditions.push(`A.state = $${paramIndex}`);
+      queryParams.push('NY');
+      paramIndex++;
+    }
+
+    if (filters.postal_code) {
+      whereConditions.push(`A.postal_code = $${paramIndex}`);
+      queryParams.push(filters.postal_code);
+      paramIndex++;
+    }
+
+    // Add provider type filter
+    if (filters.provider_type) {
+      whereConditions.push(`HP.provider_type ILIKE $${paramIndex}`);
+      queryParams.push(`%${filters.provider_type}%`);
+      paramIndex++;
+    }
+
+    // Add WHERE clause if we have conditions
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+
+    // Add GROUP BY and ORDER BY
+    query += `
+      GROUP BY HP.provider_id, MU.name, MU.email, HP.provider_type, HP.bio, HP.contact_information,
+               A.street_address, A.apartment_number, A.city, A.state, A.postal_code,
+               P.country_code, P.area_code, P.phone_number, P.phone_type
+      ORDER BY A.city, MU.name
+    `;
+
+    const res = await db.query(query, queryParams);
+    return res.rows;
   }
 
   static async update(provider_id, data) {

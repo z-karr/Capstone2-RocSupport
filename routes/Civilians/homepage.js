@@ -39,4 +39,33 @@ router.post(
   }
 );
 
+/** POST /search/advanced: { filters } => { providers, emergencyResources }
+ * Enhanced search for providers with location and other filters.
+ * Authorization required: none
+ */
+router.post(
+  "/search/advanced",
+  async function (req, res, next) {
+    try {
+      console.log("Advanced search request received:", req.body);
+      const filters = req.body;
+      
+      // Get providers with enhanced search
+      const providers = await HealthcareProviders.searchWithFilters(filters);
+      
+      // Get emergency resources if issue_name is provided
+      let emergencyResources = [];
+      if (filters.issue_name) {
+        emergencyResources = await EmergencyResources.findByMedicalIssue(
+          filters.issue_name
+        );
+      }
+      
+      return res.json({ providers, emergencyResources });
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
+
 module.exports = router;
