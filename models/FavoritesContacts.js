@@ -24,6 +24,36 @@ class FavoritesContacts {
     return favoriteContact;
   }
 
+  /** Find all favorite contacts for a patient
+   *
+   * Returns [{ favorite_id, patient_id, provider_id, provider_name, provider_type, bio, contact_information, ... }, ...]
+   **/
+  static async findAllByPatientId(patient_id) {
+    const result = await db.query(
+      `SELECT fc.favorite_id, fc.patient_id, fc.provider_id,
+              hp.name, hp.provider_type, hp.bio, hp.contact_information,
+              a.street_address, a.apartment_number, a.city, a.state, a.postal_code,
+              p.country_code, p.area_code, p.phone_number, p.phone_type,
+              ARRAY_AGG(mi.issue_name) as supported_health_issues
+       FROM FavoritesContacts fc
+       INNER JOIN HealthcareProviders hp ON fc.provider_id = hp.provider_id
+       INNER JOIN MasterUsers mu ON hp.user_id = mu.user_id
+       LEFT JOIN Addresses a ON hp.addressID = a.address_id
+       LEFT JOIN PhoneNumbers p ON hp.phoneID = p.phone_id
+       LEFT JOIN ProviderSupportedIssues psi ON hp.provider_id = psi.provider_id
+       LEFT JOIN MedicalIssues mi ON psi.issue_id = mi.issue_id
+       WHERE fc.patient_id = $1
+       GROUP BY fc.favorite_id, fc.patient_id, fc.provider_id, hp.name, hp.provider_type, 
+                hp.bio, hp.contact_information, a.street_address, a.apartment_number, 
+                a.city, a.state, a.postal_code, p.country_code, p.area_code, 
+                p.phone_number, p.phone_type
+       ORDER BY fc.favorite_id`,
+      [patient_id]
+    );
+
+    return result.rows;
+  }
+
   /** Delete a favorite contact from the database.
    *
    * Returns { deleted: favorite_id }
