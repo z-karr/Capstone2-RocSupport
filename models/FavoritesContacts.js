@@ -31,7 +31,7 @@ class FavoritesContacts {
   static async findAllByPatientId(patient_id) {
     const result = await db.query(
       `SELECT fc.favorite_id, fc.patient_id, fc.provider_id,
-              hp.name, hp.provider_type, hp.bio, hp.contact_information,
+              mu.name, hp.provider_type, hp.bio, hp.contact_information,
               a.street_address, a.apartment_number, a.city, a.state, a.postal_code,
               p.country_code, p.area_code, p.phone_number, p.phone_type,
               ARRAY_AGG(mi.issue_name) as supported_health_issues
@@ -43,7 +43,7 @@ class FavoritesContacts {
        LEFT JOIN ProviderSupportedIssues psi ON hp.provider_id = psi.provider_id
        LEFT JOIN MedicalIssues mi ON psi.issue_id = mi.issue_id
        WHERE fc.patient_id = $1
-       GROUP BY fc.favorite_id, fc.patient_id, fc.provider_id, hp.name, hp.provider_type, 
+       GROUP BY fc.favorite_id, fc.patient_id, fc.provider_id, mu.name, hp.provider_type, 
                 hp.bio, hp.contact_information, a.street_address, a.apartment_number, 
                 a.city, a.state, a.postal_code, p.country_code, p.area_code, 
                 p.phone_number, p.phone_type

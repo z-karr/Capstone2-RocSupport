@@ -1,18 +1,13 @@
 {
-    
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Favorites",
     "type": "object",
     "properties": {
-        "civilian_user_id": {
-            "type": "integer"
-        },
-        "provider_id": {
+        "providerId": {
             "type": "integer"
         }
     },
     "required": [
-        "civilian_user_id",
-        "provider_id"
+        "providerId"
     ]
 }
