@@ -45,18 +45,21 @@ function ensureUserType(type) {
 
 /** Ensure the correct provider is accessing their own profile. */
 function ensureCorrectProvider(req, res, next) {
-  // try {
-  //     const user = res.locals.user;
-  //     // If your route param is provider_id, you may need to query DB to get user_id for that provider_id
-  //     if (!user || user.type !== "provider" || user.user_id !== parseInt(req.params.user_id)) {
-  //         throw new UnauthorizedError("Not authorized as this provider");
-  //     }
-  //     return next();
-  // } catch (err) {
-  //     return next(err)
-  // }
-  if (!res.locals.user) throw new UnauthorizedError();
-  return next();
+  try {
+    const user = res.locals.user;
+    if (!user || user.type !== "provider") {
+      throw new UnauthorizedError("Must be a provider");
+    }
+    
+    const requestedUserId = parseInt(req.params.user_id);
+    if (user.user_id !== requestedUserId) {
+      throw new UnauthorizedError("Not authorized to access this provider profile");
+    }
+    
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 }
 
 module.exports = {

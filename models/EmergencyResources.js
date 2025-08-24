@@ -127,6 +127,4 @@ class EmergencyResources {
     }
 }
 
-/** Retrieve all emergency resources by a specific supported medical issue name */
-
 module.exports = EmergencyResources;
