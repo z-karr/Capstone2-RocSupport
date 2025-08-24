@@ -13,13 +13,12 @@ const PORT = +process.env.PORT || 5000; // Ensure fallback to port 5000
 function getDatabaseUri() {
     return (process.env.NODE_ENV === "test")
         ? "roc_support_test"
-        : process.env.DATABASE_URL || "postgres://zkarr:12345@localhost:5432/roc_support";
+        : process.env.DATABASE_URL || "postgresql://localhost/roc_support";
 }
 
 const BCRYPT_WORK_FACTOR = process.env.NODE_ENV === "test" ? 1 : 12;
 
 console.log("ROCsupport Config:".green);
-console.log("SECRET_KEY:".yellow, SECRET_KEY);
 console.log("PORT:".yellow, PORT.toString());
 console.log("BCRYPT_WORK_FACTOR".yellow, BCRYPT_WORK_FACTOR);
 console.log("Database:".yellow, getDatabaseUri());

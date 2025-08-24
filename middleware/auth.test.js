@@ -5,8 +5,8 @@ const { UnauthorizedError } = require("../expressError");
 const {
     authenticateJWT,
     ensureLoggedIn,
-    ensureAdmin,
-    ensureCorrectUserOrAdmin,
+    ensureUserType,
+    ensureCorrectProvider,
 } = require("./auth");
 
 
@@ -77,30 +77,36 @@ describe("ensureLoggedIn", function () {
         const next = function (err) {
             expect(err instanceof UnauthorizedError).toBeTruthy();
         };
-        ensureLoggedIn(req, res, next);
+        expect(() => {
+            ensureLoggedIn(req, res, next);
+        }).toThrow(UnauthorizedError);
     });
 });
 
 
-describe("ensureAdmin", function () {
-    test("works", function () {
+describe("ensureUserType", function () {
+    test("works for correct type", function () {
         expect.assertions(1);
         const req = {};
-        const res = { locals: { user: { username: "test", isAdmin: true } } };
+        const res = { locals: { user: { username: "test", type: "provider" } } };
         const next = function (err) {
             expect(err).toBeFalsy();
         };
-        ensureAdmin(req, res, next);
+        const middleware = ensureUserType("provider");
+        middleware(req, res, next);
     });
 
-    test("unauth if not admin", function () {
+    test("unauth if wrong type", function () {
         expect.assertions(1);
         const req = {};
-        const res = { locals: { user: { username: "test", isAdmin: false } } };
+        const res = { locals: { user: { username: "test", type: "patient" } } };
         const next = function (err) {
             expect(err instanceof UnauthorizedError).toBeTruthy();
         };
-        ensureAdmin(req, res, next);
+        const middleware = ensureUserType("provider");
+        expect(() => {
+            middleware(req, res, next);
+        }).toThrow(UnauthorizedError);
     });
 
     test("unauth if anon", function () {
@@ -110,49 +116,34 @@ describe("ensureAdmin", function () {
         const next = function (err) {
             expect(err instanceof UnauthorizedError).toBeTruthy();
         };
-        ensureAdmin(req, res, next);
+        const middleware = ensureUserType("provider");
+        expect(() => {
+            middleware(req, res, next);
+        }).toThrow(UnauthorizedError);
     });
 });
 
 
-describe("ensureCorrectUserOrAdmin", function () {
-    test("works: admin", function () {
+describe("ensureCorrectProvider", function () {
+    test("works for logged in user", function () {
         expect.assertions(1);
-        const req = { params: { username: "test" } };
-        const res = { locals: { user: { username: "admin", isAdmin: true } } };
+        const req = { params: { user_id: "1" } };
+        const res = { locals: { user: { user_id: 1, type: "provider" } } };
         const next = function (err) {
             expect(err).toBeFalsy();
         };
-        ensureCorrectUserOrAdmin(req, res, next);
-    });
-
-    test("works: same user", function () {
-        expect.assertions(1);
-        const req = { params: { username: "test" } };
-        const res = { locals: { user: { username: "test", isAdmin: false } } };
-        const next = function (err) {
-            expect(err).toBeFalsy();
-        };
-        ensureCorrectUserOrAdmin(req, res, next);
-    });
-
-    test("unauth: mismatch", function () {
-        expect.assertions(1);
-        const req = { params: { username: "wrong" } };
-        const res = { locals: { user: { username: "test", isAdmin: false } } };
-        const next = function (err) {
-            expect(err instanceof UnauthorizedError).toBeTruthy();
-        };
-        ensureCorrectUserOrAdmin(req, res, next);
+        ensureCorrectProvider(req, res, next);
     });
 
     test("unauth: if anon", function () {
         expect.assertions(1);
-        const req = { params: { username: "test" } };
+        const req = { params: { user_id: "1" } };
         const res = { locals: {} };
         const next = function (err) {
             expect(err instanceof UnauthorizedError).toBeTruthy();
         };
-        ensureCorrectUserOrAdmin(req, res, next);
+        expect(() => {
+            ensureCorrectProvider(req, res, next);
+        }).toThrow(UnauthorizedError);
     });
 });
